@@ -11,13 +11,14 @@ class ImageClient:
         self.image_library = image_library
         self.window_position = self.look_for_window()
 
-    def look_for_image(self, img: cv.Mat, screen: cv.Mat = None) -> list[tuple[int, int]] | bool:
+    def look_for_image(self, img: cv.Mat, screen: cv.Mat = None, threshold: float = 0.7) -> (list[tuple[int, int]] |
+                                                                                             bool):
         # yes_matches = match_screen(yes_button_image, screen, 0.7)
         if screen is None:
-            screen = self.grab_screen((self.window_position[0], self.window_position[1], self.window_position[0] +
+            screen, _ = self.grab_screen((self.window_position[0], self.window_position[1], self.window_position[0] +
                                        self.window_size[0], self.window_position[1] + self.window_size[1]))
         res = cv.matchTemplate(img, screen, cv.TM_CCOEFF_NORMED)
-        matches = np.where(res >= 0.7)
+        matches = np.where(res >= threshold)
         matches_pos_list = []
         # print(matches[0])
         if matches[0].any():
@@ -28,7 +29,7 @@ class ImageClient:
             return False
 
     def look_for_window(self) -> tuple[int, int] | bool:
-        screen_grayscale = self.grab_screen()
+        screen_grayscale, _ = self.grab_screen()
         matches_rbx_img = self.look_for_image(self.image_library['roblox'], screen_grayscale)
         if matches_rbx_img:
             return matches_rbx_img[0]
@@ -37,4 +38,4 @@ class ImageClient:
     def grab_screen(self, bbox: tuple = ()):
         screen_array = np.array(grab(bbox))[:, :, ::-1].copy()
         screen_gray = cv.cvtColor(screen_array, cv.COLOR_BGR2GRAY)
-        return cv.adaptiveThreshold(screen_gray, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 11, 2)
+        return cv.adaptiveThreshold(screen_gray, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 11, 2), screen_array
